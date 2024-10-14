@@ -1,0 +1,7 @@
+profiles:
+  standard:
+    qc_tool: true
+    filter_tool: true
+  quick:
+    qc_tool: false
+    filter_tool: '-Q'
