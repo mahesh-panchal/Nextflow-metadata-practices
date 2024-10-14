@@ -9,7 +9,7 @@ encoding this into the filename.
 
 ## Types of meta data to explore
 
-### Files with additional annotations
+### Files with additional annotations
 
 Files often have various kinds of data associated with them
 
@@ -17,17 +17,17 @@ e.g., Bam file:
 
 ```yml
 bam:
+  path: str
+  reference:
     path: str
-    reference:
-        path: str
-        id: str
-        gtf: str
-    region:
-        chr: str
-        start: int
-        end: int
-    strand: enum( +, -, ? )
-    endedness: enum( single, paired )
+    id: str
+    gtf: str
+  region:
+    chr: str
+    start: int
+    end: int
+  strand: enum( +, -, ? )
+  endedness: enum( single, paired )
 ```
 
 ### Profiles
@@ -37,10 +37,10 @@ we would like to initialize a batch of associated things.
 
 ```yml
 profiles:
-    standard:
-        fastqc: true
-        fastp: true
-    quick:
-        fastqc: false
-        fastp: '-Q'
+  standard:
+    fastqc: true
+    fastp: true
+  quick:
+    fastqc: false
+    fastp: '-Q'
 ```
