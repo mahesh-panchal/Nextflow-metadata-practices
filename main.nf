@@ -44,8 +44,9 @@ process FILTER_TOOL {
     tuple path(ext), val(args)
 
     script:
+    def task_args = task.ext.args ?: 'no args' // Look at config
     """
-    echo "FILTER TOOL: $args"
+    echo "FILTER TOOL: $task_args"
     """
 
     output:
