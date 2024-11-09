@@ -1,58 +1,46 @@
+include { QC_TOOL } from './modules/qc_tool/main'
+include { QUALITY_CONTROL } from './subworkflows/quality_control/main'
+
+/* AIMS
+- Params defined through a single file (-params-file) rather than (-params-file and config)
+- Params come in through input:
+- Allow closures
+- Support multi-tool args
+- Support prefix - effectively closures - naming based on input: variables
+Extra:
+- Simplify full name vs simple name priority
+- Avoid nested params
+- Validate process names
+*/
+
 workflow {
-    // Read in meta data
-    settings = Channel.fromPath( params.pipeline_profiles, checkIfExists: true )
-        .map { yml_file -> new groovy.yaml.YamlSlurper()
-            .parse( yml_file )
-            .profiles[ params.profile ] // Select profile
-        }
-        // .view()
+    // Read in tool specific settings
+    def settings = getToolSettings(params)
     // Read in data files
     data = Channel.fromPath( params.data, checkIfExists: true )
     // Outer join data with settings 
-    input = data.combine(settings) // tuple( data, settings ) 
+    input = data // data.combine(settings) // tuple( data, settings ) 
 
+    println(settings)
     QC_TOOL( 
-        input.filter{ _ext, opts -> opts.qc_tool } // Keep inputs where true or "--opts ..."
-            .map { ext, opts ->
-                // Use ternary operator to check if tool is run with defaults, or specific options are given
-                opts.qc_tool instanceof Boolean? tuple(ext, '-'): tuple(ext, opts.qc_tool) 
-            }
+        input.map { ext_files ->
+            tuple(ext_files, settings."QC_TOOL") // Simple case with no pattern match, so likely function needed.
+        }
     )
     .view()
-    FILTER_TOOL( 
-        input.filter{ _ext, opts -> opts.filter_tool } // Keep inputs where true or "--opts ..."
-            .map { ext, opts ->
-                // Use ternary operator to check if tool is run with defaults, or specific options are given
-                opts.filter_tool instanceof Boolean? tuple(ext, '-'): tuple(ext, opts.filter_tool)
-            }
+
+    QUALITY_CONTROL(
+        input,
+        getToolSettings(settings,'QUALITY_CONTROL')
     )
-    .view()
-        
+
 }
 
-process QC_TOOL {
-    input:
-    tuple path(ext), val(args)
-
-    script:
-    """
-    echo "QC TOOL: $args"
-    """
-
-    output:
-    stdout
-}
-
-process FILTER_TOOL {
-    input:
-    tuple path(ext), val(args)
-
-    script:
-    def task_args = task.ext.args ?: 'no args' // Look at nextflow.config
-    """
-    echo "FILTER TOOL: $task_args"
-    """
-
-    output:
-    stdout
+def getToolSettings(Map param_map, String wf_name = ""){
+    param_map.findAll{ key, _value -> key.startsWith("withName:") || key.startsWith("${wf_name}:") }
+        .collectEntries { key, value -> 
+            def process_name = (key - 'withName:').replaceAll("['\"]","")
+            process_name = wf_name ? process_name - "${wf_name}:" : process_name
+            [(process_name): value ]
+        }
 }

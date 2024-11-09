@@ -1,0 +1,5 @@
+data: "data/*.ext"
+
+withName:'QC_TOOL': 'raw'
+withName:'QUALITY_CONTROL:QC_TOOL': '{ "qc ${ext.baseName}" }'
+withName:'QUALITY_CONTROL:FILTER_TOOL': 'filter' 
