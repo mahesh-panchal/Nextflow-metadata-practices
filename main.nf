@@ -6,20 +6,24 @@ workflow {
             .profiles[ params.profile ] // Select profile
         }
         // .view()
+    // Read in data files
     data = Channel.fromPath( params.data, checkIfExists: true )
-    input = data.combine(settings)
+    // Outer join data with settings 
+    input = data.combine(settings) // tuple( data, settings ) 
 
     QC_TOOL( 
-        input.filter{ ext, settings -> settings.qc_tool } 
-            .map { ext, settings ->
-                settings.qc_tool instanceof Boolean? tuple(ext, '-'): tuple(ext, settings.qc_tool) 
+        input.filter{ _ext, opts -> opts.qc_tool } // Keep inputs where true or "--opts ..."
+            .map { ext, opts ->
+                // Use ternary operator to check if tool is run with defaults, or specific options are given
+                opts.qc_tool instanceof Boolean? tuple(ext, '-'): tuple(ext, opts.qc_tool) 
             }
     )
     .view()
     FILTER_TOOL( 
-        input.filter{ ext, settings -> settings.filter_tool } 
-            .map { ext, settings ->
-                settings.filter_tool instanceof Boolean? tuple(ext, '-'): tuple(ext, settings.filter_tool)
+        input.filter{ _ext, opts -> opts.filter_tool } // Keep inputs where true or "--opts ..."
+            .map { ext, opts ->
+                // Use ternary operator to check if tool is run with defaults, or specific options are given
+                opts.filter_tool instanceof Boolean? tuple(ext, '-'): tuple(ext, opts.filter_tool)
             }
     )
     .view()
@@ -44,7 +48,7 @@ process FILTER_TOOL {
     tuple path(ext), val(args)
 
     script:
-    def task_args = task.ext.args ?: 'no args' // Look at config
+    def task_args = task.ext.args ?: 'no args' // Look at nextflow.config
     """
     echo "FILTER TOOL: $task_args"
     """
